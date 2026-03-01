@@ -1,0 +1,167 @@
+Creacion de repositorios AlmaLinux 10.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetivo: Clonar los repositorios de AlmaLinux 10.1 y tenerlos locales en la LAN
+
+1) Instalamos una maquina virtual con AlmaLinux 10.1
+
+*********************************************************************************************
+
+2) Primero agregamos el repositorio epel:
+
+- #  yum install epel-release
+
+Una vez agregado los repositorios que quedan configurados en AlmaLinux 10.1 son los
+siguientes:
+
+- # cat /etc/redhat-release
+AlmaLinux release 10.1 (Heliotrope Lion)
+
+- # ls -l /etc/yum.repos.d/
+total 44
+-rw-r--r--. 1 root root 1016 Nov 10 21:00 almalinux-appstream.repo
+-rw-r--r--. 1 root root  980 Nov 10 21:00 almalinux-baseos.repo
+-rw-r--r--. 1 root root  944 Nov 10 21:00 almalinux-crb.repo
+-rw-r--r--. 1 root root  980 Nov 10 21:00 almalinux-extras.repo
+-rw-r--r--. 1 root root 1100 Nov 10 21:00 almalinux-highavailability.repo
+-rw-r--r--. 1 root root  944 Nov 10 21:00 almalinux-nfv.repo
+-rw-r--r--. 1 root root  932 Nov 10 21:00 almalinux-rt.repo
+-rw-r--r--. 1 root root  992 Nov 10 21:00 almalinux-saphana.repo
+-rw-r--r--. 1 root root  944 Nov 10 21:00 almalinux-sap.repo
+-rw-r--r--. 1 root root 1612 Apr 16  2025 epel.repo
+-rw-r--r--. 1 root root 1714 Apr 16  2025 epel-testing.repo
+
+*********************************************************************************************
+
+3) Las URL en cada uno de los repositorios son:
+
+- # cd /etc/yum.repos.d
+
+- # egrep '(^baseurl|# baseurl|#baseurl)' * | grep -v Media
+almalinux-appstream.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/AppStream/$basearch/os/
+almalinux-appstream.repo:# baseurl=https://vault.almalinux.org/$releasever/AppStream/debug/$basearch/
+almalinux-appstream.repo:# baseurl=https://vault.almalinux.org/$releasever/AppStream/Source/
+almalinux-baseos.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
+almalinux-baseos.repo:# baseurl=https://vault.almalinux.org/$releasever/BaseOS/debug/$basearch/
+almalinux-baseos.repo:# baseurl=https://vault.almalinux.org/$releasever/BaseOS/Source/
+almalinux-crb.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/CRB/$basearch/os/
+almalinux-crb.repo:# baseurl=https://vault.almalinux.org/$releasever/CRB/debug/$basearch/
+almalinux-crb.repo:# baseurl=https://vault.almalinux.org/$releasever/CRB/Source/
+almalinux-extras.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/extras/$basearch/os/
+almalinux-extras.repo:# baseurl=https://vault.almalinux.org/$releasever/extras/debug/$basearch/
+almalinux-extras.repo:# baseurl=https://vault.almalinux.org/$releasever/extras/Source/
+almalinux-highavailability.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/HighAvailability/$basearch/os/
+almalinux-highavailability.repo:# baseurl=https://vault.almalinux.org/$releasever/HighAvailability/debug/$basearch/
+almalinux-highavailability.repo:# baseurl=https://vault.almalinux.org/$releasever/HighAvailability/Source/
+almalinux-nfv.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/NFV/$basearch/os/
+almalinux-nfv.repo:# baseurl=https://vault.almalinux.org/$releasever/NFV/debug/$basearch/
+almalinux-nfv.repo:# baseurl=https://vault.almalinux.org/$releasever/NFV/Source/
+almalinux-rt.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/RT/$basearch/os/
+almalinux-rt.repo:# baseurl=https://vault.almalinux.org/$releasever/RT/debug/$basearch/
+almalinux-rt.repo:# baseurl=https://vault.almalinux.org/$releasever/RT/Source/
+almalinux-saphana.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/SAPHANA/$basearch/os/
+almalinux-saphana.repo:# baseurl=https://vault.almalinux.org/$releasever/SAPHANA/debug/$basearch/
+almalinux-saphana.repo:# baseurl=https://vault.almalinux.org/$releasever/SAPHANA/Source/
+almalinux-sap.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/SAP/$basearch/os/
+almalinux-sap.repo:# baseurl=https://vault.almalinux.org/$releasever/SAP/debug/$basearch/
+almalinux-sap.repo:# baseurl=https://vault.almalinux.org/$releasever/SAP/Source/
+epel.repo:#baseurl=https://download.example/pub/epel/$releasever${releasever_minor:+z}/Everything/$basearch/
+epel.repo:#baseurl=https://download.example/pub/epel/$releasever${releasever_minor:+z}/Everything/$basearch/debug/
+epel.repo:#baseurl=https://download.example/pub/epel/$releasever${releasever_minor:+z}/Everything/source/tree/
+epel-testing.repo:#baseurl=https://download.example/pub/epel/testing/$releasever${releasever_minor:+z}/Everything/$basearch/
+epel-testing.repo:#baseurl=https://download.example/pub/epel/testing/$releasever${releasever_minor:+z}/Everything/$basearch/debug/
+epel-testing.repo:#baseurl=https://download.example/pub/epel/testing/$releasever${releasever_minor:+z}/Everything/source/tree/
+
+*********************************************************************************************
+
+4) Creamos el repositorio AppStream. En nuestro server de repositorios:
+
+- # mkdir -p /var/www/html/almalinux10.1/AppStream/x86_64/
+
+- # cd /var/www/html/almalinux10.1/AppStream/x86_64/
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=4 -np \
+    --reject "index.html*" https://mirror.sitsa.com.ar/almalinux/10.1/AppStream/x86_64/
+
+*********************************************************************************************
+
+5) Creamos el repositorio BaseOS:
+
+- # mkdir -p /var/www/html/almalinux10.1/BaseOS/x86_64
+
+- # cd /var/www/html/almalinux10.1/BaseOS/x86_64
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=4 -np \
+    --reject "index.html*" https://mirror.sitsa.com.ar/almalinux/10.1/BaseOS/x86_64/
+
+*********************************************************************************************
+
+6) Creamos el repositorio Extras:
+
+- # mkdir -p /var/www/html/almalinux10.1/extras/x86_64/
+
+- # cd /var/www/html/almalinux10.1/extras/x86_64/
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=4 -np \
+    --reject "index.html*" https://mirror.sitsa.com.ar/almalinux/10.1/extras/x86_64/
+
+*********************************************************************************************
+
+7) Creamos el repositorio High Availability:
+
+- # mkdir -p /var/www/html/almalinux10.1/HighAvailability/x86_64
+
+- # cd /var/www/html/almalinux10.1/HighAvailability/x86_64
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=4 -np \
+    --reject "index.html*" https://mirror.sitsa.com.ar/almalinux/10.1/HighAvailability/x86_64/
+
+*********************************************************************************************
+
+8) Creamos el repositorio Epel:
+
+- # mkdir /var/www/html/almalinux10.1/epel
+
+- # cd /var/www/html/almalinux10.1/epel
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=3 -np \
+    --reject "index.html*" https://epel.mirror.constant.com/10.1/Everything/x86_64/
+
+El directorio debug ocupa bastante lugar y no es algo que vayamos a usar:
+
+- # rm -rf debug/
+
+Por ultimo, copiamos la clave pública GPG de EPEL del nodo que instalamos a nuestro server
+de repositorios:
+
+- # scp /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-10 root@nuci5e:/var/www/html/almalinux10.1
+root@nuci5e's password: 
+
+*********************************************************************************************
+
+9) Creamos un directorio para las imagenes ISO y las bajamos:
+
+- # mkdir /var/www/html/almalinux10.1/isos/
+
+- # cd mkdir /var/www/html/almalinux10.1/isos/
+
+- # wget https://mirror.sitsa.com.ar/almalinux/10.1/isos/x86_64/AlmaLinux-10.1-x86_64-boot.iso
+
+- # wget https://mirror.sitsa.com.ar/almalinux/10.1/isos/x86_64/AlmaLinux-10.1-x86_64-dvd.iso
+
+- # wget https://mirror.sitsa.com.ar/almalinux/10.1/isos/x86_64/AlmaLinux-10.1-x86_64-minimal.iso
+
+- # wget https://mirror.sitsa.com.ar/almalinux/10.1/isos/x86_64/AlmaLinux-10.1-x86_64-minimal.iso
+
+*********************************************************************************************
+
+10) Creamos un directorio para las imagenes LIVE y las bajamos:
+
+- # mkdir /var/www/html/almalinux10.1/live/x86_64
+
+- # cd /var/www/html/almalinux10.1/live/x86_64
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=4 -np \
+    --reject "index.html*" https://mirror.sitsa.com.ar/almalinux/10.1/live/x86_64/
+
+*********************************************************************************************
