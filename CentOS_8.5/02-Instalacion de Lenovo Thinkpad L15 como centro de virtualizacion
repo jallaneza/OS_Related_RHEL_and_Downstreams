@@ -1,0 +1,632 @@
+Instalacion de Lenovo Thinkpad L15 como centro de virtualizacion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetivo: Tener una maquina para poder ejecutar cantidad de VMs (VirtualBox y VMWare 
+          Workstation)
+
+1) La máquina se instala con CentOS 8.5 por kickstart.
+
+(Contenido de los archivos utilizados en el proceso al final del documento)
+
+*********************************************************************************************
+
+2) Una vez finalizada la instalación, nos logueamos en GNOME y efectuamos estos pasos:
+
+- Click sobre Activities
+- En el search buscar software y abrirlo
+    - Buscar Dash to Panel -> doble click -> install
+- Click sobre el cuadrado de puntos en el vértice inferior izquierdo
+- En el search buscar Tweaks y abrirlo
+- Click en Dash to Panel
+    - Buscar la configuración del Desktop button -> cambiar "Show Desktop button with (px)" a 
+      30 px
+- Click en Extensions
+    - Desktop Icons On -> config -> size of the desktop icons -> Small
+- Click en Windows -> Titlebar Buttons -> Ambas en on
+- Click derecho sobre cada icono y seleccionar del menu de contexto "Allow Launching"
+
+*********************************************************************************************
+
+NOTA: En el caso de la instalación del VirtualBox Extension Pack desde la linea de comando, 
+      para averiguar el hash de la licencia hacemos: (cuando se instala desde el CLI usa el 
+      archivo que termina en .txt):
+
+- # gunzip --stdout -S .vbox-extpack Oracle_VM_VirtualBox_Extension_Pack-6.1.34.vbox-extpack | tar x ; sha256sum ExtPack-license.* ; rm -rf *
+
+*********************************************************************************************
+
+Contenido del archivo kickstart centos8-full-thinkpadL15-ks.cfg;
+
+#
+# Kickstart configuration file for installing CentOS 8.5
+# on my Thinkpad L15 with Teamviewer, VirtualBox 6.1 and VMWare Workstation 16
+#
+
+# This is not used in CentOS 8.5 as caused an error in the kickstart install
+# System authorization information
+# auth --enableshadow --passalgo=sha512
+
+# Use network installation adding the AppStream Repo, which is the one that came
+# in the full install ISO. This is because there was a difference between that repository
+# and the repository accessible via HTTP. That difference made the install fail
+repo --name appstreamkickstartrepo  --baseurl http://nuc480e.zanella.net/centos8.5/AppStream/x86_64/kickstart/
+
+# Use CDROM installation media
+# cdrom
+
+# Use text mode install
+# text
+
+# Do not run the Setup Agent on first boot
+firstboot --disabled
+
+# Auto accept the EULA
+eula --agreed
+
+# Use the only disk on the system
+ignoredisk --only-use=nvme0n1
+
+# Keyboard layout
+keyboard --vckeymap=la-latin1 --xlayouts='latam'
+
+# System language
+lang en_US.UTF-8
+
+# Network information. This is not needed as I have a DHCP server and DNS that provides
+# direct and reverse resolution. The hostname is set via a reverse DNS query
+#network  --bootproto=dhcp --device=enp0s3 --ipv6=auto --activate
+#network  --hostname=splunk.zanellalab.com
+
+# For an static IP we would do:
+# network  --bootproto=static --device=enp0s3 --gateway=10.0.0.1 --ip=10.1.1.2 --nameserver=10.1.1.1 --netmask=255.0.0.0 --ipv6=auto --activate
+
+# Root password
+rootpw --iscrypted $6$..mxVK2aru5eMaV1$4HSef4.7/2zDU3Ncg.sKGCL6tXhS1JzE5KrBFgbMSAWlMlv6RPCqin6b70B16A6D7zEMm0946uZKAI2vYwwbU.
+
+# Create user
+user --name=javier --groups=wheel --iscrypted --password=$6$..mxVK2aru5eMaV1$4HSef4.7/2zDU3Ncg.sKGCL6tXhS1JzE5KrBFgbMSAWlMlv6RPCqin6b70B16A6D7zEMm0946uZKAI2vYwwbU.
+
+# Do not configure the X Window System. Not needed as we want the X configured
+# and running
+# skipx
+
+# Disable kdump
+%addon com_redhat_kdump --disable
+%end
+
+# System timezone
+timezone America/Argentina/Buenos_Aires --isUtc
+
+# System bootloader configuration
+bootloader --location=mbr --boot-drive=nvme0n1
+
+# If we would have wanted autopartitioning
+# autopart --type=lvm
+
+# Partition clearing information
+clearpart --all --initlabel --drives=nvme0n1
+
+# Disk partitioning information for 1 TB
+part swap --fstype="swap" --ondisk=nvme0n1 --size=21000
+part /boot --fstype="xfs"  --ondisk=nvme0n1 --size=1024
+part pv.593 --fstype="lvmpv" --ondisk=nvme0n1 --size=931844
+volgroup rootvg --pesize=4096 pv.593
+logvol /  --fstype="xfs" --size=931840 --name=root --vgname=rootvg
+
+# Reboot to complete install
+reboot
+
+%packages
+@Core
+@Fonts
+@GNOME
+@Hardware Support
+@Common NetworkManager submodules
+@Standard
+@Workstation product core
+@Workstation
+lsof
+bash-completion
+net-tools
+wget
+bind-utils
+telnet
+# The following packages are listed to comply with
+# dependencies during installation that, for some reason, were not installed
+# causing the install to fail
+nss
+nspr
+nss-softokn
+nss-softokn-freebl
+nss-sysinit
+nss-util
+dbus-daemon
+dbus-x11
+
+%end
+
+%post
+
+# Work the repos we will need
+/bin/mv /etc/yum.repos.d/* /root
+/usr/bin/wget -O /etc/yum.repos.d/myappstream.repo http://nuc480e.zanella.net/centos8.5/myappstream.repo
+/usr/bin/wget -O /etc/yum.repos.d/mybase.repo http://nuc480e.zanella.net/centos8.5/mybase.repo
+/usr/bin/wget -O /etc/yum.repos.d/mycentosplus.repo http://nuc480e.zanella.net/centos8.5/mycentosplus.repo
+/usr/bin/wget -O /etc/yum.repos.d/myconfigmanagement.repo http://nuc480e.zanella.net/centos8.5/myconfigmanagement.repo
+/usr/bin/wget -O /etc/yum.repos.d/mydevel.repo http://nuc480e.zanella.net/centos8.5/mydevel.repo
+/usr/bin/wget -O /etc/yum.repos.d/myepel.repo http://nuc480e.zanella.net/centos8.5/myepel.repo
+/usr/bin/wget -O /etc/yum.repos.d/myextras.repo http://nuc480e.zanella.net/centos8.5/myextras.repo
+/usr/bin/wget -O /etc/yum.repos.d/myhigh.repo http://nuc480e.zanella.net/centos8.5/myhigh.repo
+/usr/bin/wget -O /etc/yum.repos.d/mypowertools.repo http://nuc480e.zanella.net/centos8.5/mypowertools.repo
+/usr/bin/wget -O /etc/yum.repos.d/chrome.repo http://nuc480e.zanella.net/centos8.5/chrome.repo
+
+# Copy the epel repo GPG public key
+
+/usr/bin/wget -O /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 http://nuc480e.zanella.net/centos8.5/RPM-GPG-KEY-EPEL-8
+
+# Copy the config file disabling the Wayland interface so Teamviewer works
+/usr/bin/wget -O /etc/gdm/custom.conf http://nuc480e.zanella.net/centos8.5/custom.conf
+
+# Copy the script that will install packages and update kernel needed for the installation
+# of VMWare Workstation 16 (so the kernel and kernel-headers are same version)
+# change permissions, add it to the script that will run after first boot
+/usr/bin/wget -O /root/install_and_config_packages.sh http://nuc480e.zanella.net/centos8.5/install_and_config_packages.sh
+/usr/bin/chmod 755 /root/install_and_config_packages.sh
+/usr/bin/echo "/root/install_and_config_packages.sh" >> /etc/rc.d/rc.local
+/usr/bin/chmod +x /etc/rc.d/rc.local
+
+# Transfer the installers needed
+/usr/bin/wget -O /root/teamviewer_15.29.4.x86_64.rpm http://nuc480e.zanella.net/centos8.5/teamviewer_15.29.4.x86_64.rpm
+/usr/bin/wget -O /root/VirtualBox-6.1-6.1.34_150636_el8-2.x86_64.rpm http://nuc480e.zanella.net/centos8.5/VirtualBox-6.1-6.1.34_150636_el8-2.x86_64.rpm
+/usr/bin/wget -O /root/Oracle_VM_VirtualBox_Extension_Pack-6.1.34.vbox-extpack http://nuc480e.zanella.net/centos8.5/Oracle_VM_VirtualBox_Extension_Pack-6.1.34.vbox-extpack
+/usr/bin/wget -O /root/VirtualBoxSDK-6.1.34-150636.zip http://nuc480e.zanella.net/centos8.5/VirtualBoxSDK-6.1.34-150636.zip
+/usr/bin/wget -O /root/VMware-Workstation-Full-16.2.3-19376536.x86_64.bundle http://nuc480e.zanella.net/centos8.5/VMware-Workstation-Full-16.2.3-19376536.x86_64.bundle
+/usr/bin/wget -O /root/vmware-serial.txt http://nuc480e.zanella.net/centos8.5/vmware-serial.txt
+/usr/bin/wget -O /root/virtualbox.desktop http://nuc480e.zanella.net/centos8.5/virtualbox.desktop
+/usr/bin/wget -O /root/vmware-workstation.desktop http://nuc480e.zanella.net/centos8.5/vmware-workstation.desktop
+/usr/bin/wget -O /root/teamviewer.desktop http://nuc480e.zanella.net/centos8.5/teamviewer.desktop
+/usr/bin/wget -O /root/google-chrome.desktop http://nuc480e.zanella.net/centos8.5/google-chrome.desktop
+
+# Change permission of the VMWare Worstation 16 installer
+/usr/bin/chmod 755 /root/VMware-Workstation-Full-16.2.3-19376536.x86_64.bundle
+
+%end
+
+*********************************************************************************************
+
+Contenido del archivo install_and_config_packages.sh:
+
+#!/bin/bash
+
+# Script that will install packages needed, update kernel
+# for the Kickstart install of CentOS 8.3 on the Thinkpad L15
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin
+
+function logaction() {
+   logger -t 'install_and_config_packages.sh' -p local1.info $1
+}
+
+# Install the keys to avoid yum to request confirmation on install
+logaction 'Importing CentOS GPG Keys'
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+rpm --import https://dl.google.com/linux/linux_signing_key.pub
+
+# Install packages needed for VMWare Workstation 16 modules compilation
+logaction 'Installing packages to fullfill dependencies'
+yum -y install gcc kernel-devel make glibc-headers libaio elfutils-libelf-devel SDL qt5-qtx11extras qt5-qtlocation qt5-qtquickcontrols qt5-qtsensors qt5-qtwebchannel qt5-qtwebkit minizip1.2 libXScrnSaver gnome-tweaks --enablerepo=myappstream,myepel
+
+# Install Google Chrome (current as of May 18, 2022)
+logaction 'Installing Google Chrome'
+yum -y install google-chrome-stable --enablerepo=*
+
+# We take some time
+logaction 'Sleeping 5'
+sleep 5
+
+# Update kernel so the version matches the kernel-headers installed version
+logaction 'Updating Kernel'
+yum -y update kernel
+
+# We installed Teamviewer
+logaction 'Installing Teamviewer'
+yum -y install /root/teamviewer_15.29.4.x86_64.rpm
+
+# We remove the repository configuration file that was installed
+# in the step above
+logaction 'Removing Teamviewer repo'
+rm -f /etc/yum.repos.d/teamviewer.repo
+
+# We remove the line containing this script in the rc.local file
+logaction 'Removing this script from rc.local'
+sed -i.bkp '15d' /etc/rc.d/rc.local
+
+# We set the correct permissions on the rc.local
+logaction 'Setting correct permissions for rc.local'
+chmod -x /etc/rc.d/rc.local
+
+# We install VMWare Workstation 16
+logaction 'Installing VMWare Workstation 16'
+#/root/VMware-Workstation-Full-16.1.0-17198959.x86_64.bundle
+/root/VMware-Workstation-Full-16.2.3-19376536.x86_64.bundle
+
+# We take some time
+logaction 'Sleeping 5'
+sleep 5
+
+# Install VirtualBox
+logaction 'Installing Virtualbox 6.1.34'
+yum -y install /root/VirtualBox-6.1-6.1.34_150636_el8-2.x86_64.rpm
+
+# We take some time
+logaction 'Sleeping 5'
+sleep 5
+
+# Install VirtualBox Extension
+logaction 'Installing Virtualbox Extension Pack'
+vboxmanage extpack install --accept-license=33d7284dc4a0ece381196fda3cfe2ed0e1e8e7ed7f27b9a9ebc4ee22e24bd23c /root/Oracle_VM_VirtualBox_Extension_Pack-6.1.34.vbox-extpack
+
+# We take some time
+logaction 'Sleeping 5'
+sleep 5
+
+# We put the desktop icons in the corresponding directory
+logaction 'Copying desktop icons'
+mkdir -p /home/javier/Desktop
+chown javier.javier /home/javier/Desktop
+mv /root/*.desktop /home/javier/Desktop/
+chown javier.javier /home/javier/Desktop/*
+chmod u+x /home/javier/Desktop/*
+
+# We remove this file
+logaction 'Removing script from the home of the root user'
+rm -f /root/install_and_config_packages.sh
+
+# Pausing before rebooting to allow for complete log
+logaction 'Pausing before rebooting'
+sleep 10
+
+# We reboot the system so the new kernel takes over
+reboot
+
+*********************************************************************************************
+
+Contenido del archivo teamviewer.desktop:
+
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Type=Application
+Categories=Network;
+
+Name=TeamViewer
+Comment=Remote control and meeting solution.
+Exec=/opt/teamviewer/tv_bin/script/teamviewer
+
+Icon=TeamViewer
+
+[Desktop Action Manager]
+Exec=/opt/teamviewer/tv_bin/script/teamviewer
+Name=Open VM Manager
+Name[de]=VM Manager öffnen
+
+*********************************************************************************************
+
+Contenido del archivo virtualbox.desktop:
+
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name=Oracle VM VirtualBox
+GenericName=Virtual Machine
+GenericName[de]=Virtuelle Maschine
+GenericName[ru]=Виртуальная машина
+Type=Application
+Exec=VirtualBox %U
+TryExec=VirtualBox
+Keywords=virtualization;
+Keywords[de]=Virtualisierung;
+Keywords[ru]=виртуализация;
+MimeType=application/x-virtualbox-vbox;application/x-virtualbox-vbox-extpack;application/x-virtualbox-ovf;application/x-virtualbox-ova;
+DocPath=file:///usr/share/doc/VirtualBox-6.1/UserManual.pdf
+Icon=virtualbox
+Categories=Emulator;System;
+Actions=Manager;
+StartupWMClass=VirtualBox Manager
+Comment=Run several virtual systems on a single host computer
+Comment[de]=Mehrere virtuelle Maschinen auf einem einzigen Rechner ausführen
+Comment[it]=Esegui più macchine virtuali su un singolo computer
+Comment[ko]=가상 머신
+Comment[pl]=Uruchamianie wielu systemów wirtualnych na jednym komputerze gospodarza
+Comment[ru]=Запуск нескольких виртуальных машин на одном компьютере
+Comment[sv]=Kör flera virtuella system på en enda värddator
+
+[Desktop Action Manager]
+Exec=VirtualBox
+Name=Open VM Manager
+Name[de]=VM Manager öffnen
+
+[google-chrome]
+name=google-chrome
+baseurl=https://dl.google.com/linux/chrome/rpm/stable/x86_64
+enabled=1
+gpgcheck=1
+gpgkey=https://dl.google.com/linux/linux_signing_key.pub
+
+*********************************************************************************************
+
+Contenido del archivo vmware-workstation.desktop:
+
+[Desktop Entry]
+Encoding=UTF-8
+Name=VMware Workstation
+Comment=Run and manage virtual machines
+Exec=/usr/bin/vmware %U
+Terminal=false
+Type=Application
+Icon=vmware-workstation
+StartupNotify=true
+Categories=System;
+MimeType=application/x-vmware-vm;application/x-vmware-team;application/x-vmware-enc-vm;x-scheme-handler/vmrc;
+
+*********************************************************************************************
+
+Contenido del archivo google-chrome.desktop:
+
+[Desktop Entry]
+Version=1.0
+Name=Google Chrome
+# Only KDE 4 seems to use GenericName, so we reuse the KDE strings.
+# From Ubuntu's language-pack-kde-XX-base packages, version 9.04-20090413.
+GenericName=Web Browser
+GenericName[ar]=متصفح الشبكة
+GenericName[bg]=Уеб браузър
+GenericName[ca]=Navegador web
+GenericName[cs]=WWW prohlížeč
+GenericName[da]=Browser
+GenericName[de]=Web-Browser
+GenericName[el]=Περιηγητής ιστού
+GenericName[en_GB]=Web Browser
+GenericName[es]=Navegador web
+GenericName[et]=Veebibrauser
+GenericName[fi]=WWW-selain
+GenericName[fr]=Navigateur Web
+GenericName[gu]=વેબ બ્રાઉઝર
+GenericName[he]=דפדפן אינטרנט
+GenericName[hi]=वेब ब्राउज़र
+GenericName[hu]=Webböngésző
+GenericName[it]=Browser Web
+GenericName[ja]=ウェブブラウザ
+GenericName[kn]=ಜಾಲ ವೀಕ್ಷಕ
+GenericName[ko]=웹 브라우저
+GenericName[lt]=Žiniatinklio naršyklė
+GenericName[lv]=Tīmekļa pārlūks
+GenericName[ml]=വെബ് ബ്രൌസര്‍
+GenericName[mr]=वेब ब्राऊजर
+GenericName[nb]=Nettleser
+GenericName[nl]=Webbrowser
+GenericName[pl]=Przeglądarka WWW
+GenericName[pt]=Navegador Web
+GenericName[pt_BR]=Navegador da Internet
+GenericName[ro]=Navigator de Internet
+GenericName[ru]=Веб-браузер
+GenericName[sl]=Spletni brskalnik
+GenericName[sv]=Webbläsare
+GenericName[ta]=இணைய உலாவி
+GenericName[th]=เว็บเบราว์เซอร์
+GenericName[tr]=Web Tarayıcı
+GenericName[uk]=Навігатор Тенет
+GenericName[zh_CN]=网页浏览器
+GenericName[zh_HK]=網頁瀏覽器
+GenericName[zh_TW]=網頁瀏覽器
+# Not translated in KDE, from Epiphany 2.26.1-0ubuntu1.
+GenericName[bn]=ওয়েব ব্রাউজার
+GenericName[fil]=Web Browser
+GenericName[hr]=Web preglednik
+GenericName[id]=Browser Web
+GenericName[or]=ଓ୍ବେବ ବ୍ରାଉଜର
+GenericName[sk]=WWW prehliadač
+GenericName[sr]=Интернет прегледник
+GenericName[te]=మహాతల అన్వేషి
+GenericName[vi]=Bộ duyệt Web
+# Gnome and KDE 3 uses Comment.
+Comment=Access the Internet
+Comment[ar]=الدخول إلى الإنترنت
+Comment[bg]=Достъп до интернет
+Comment[bn]=ইন্টারনেটটি অ্যাক্সেস করুন
+Comment[ca]=Accedeix a Internet
+Comment[cs]=Přístup k internetu
+Comment[da]=Få adgang til internettet
+Comment[de]=Internetzugriff
+Comment[el]=Πρόσβαση στο Διαδίκτυο
+Comment[en_GB]=Access the Internet
+Comment[es]=Accede a Internet.
+Comment[et]=Pääs Internetti
+Comment[fi]=Käytä internetiä
+Comment[fil]=I-access ang Internet
+Comment[fr]=Accéder à Internet
+Comment[gu]=ઇંટરનેટ ઍક્સેસ કરો
+Comment[he]=גישה אל האינטרנט
+Comment[hi]=इंटरनेट तक पहुंच स्थापित करें
+Comment[hr]=Pristup Internetu
+Comment[hu]=Internetelérés
+Comment[id]=Akses Internet
+Comment[it]=Accesso a Internet
+Comment[ja]=インターネットにアクセス
+Comment[kn]=ಇಂಟರ್ನೆಟ್ ಅನ್ನು ಪ್ರವೇಶಿಸಿ
+Comment[ko]=인터넷 연결
+Comment[lt]=Interneto prieiga
+Comment[lv]=Piekļūt internetam
+Comment[ml]=ഇന്റര്‍‌നെറ്റ് ആക്‌സസ് ചെയ്യുക
+Comment[mr]=इंटरनेटमध्ये प्रवेश करा
+Comment[nb]=Gå til Internett
+Comment[nl]=Verbinding maken met internet
+Comment[or]=ଇଣ୍ଟର୍ନେଟ୍ ପ୍ରବେଶ କରନ୍ତୁ
+Comment[pl]=Skorzystaj z internetu
+Comment[pt]=Aceder à Internet
+Comment[pt_BR]=Acessar a internet
+Comment[ro]=Accesaţi Internetul
+Comment[ru]=Доступ в Интернет
+Comment[sk]=Prístup do siete Internet
+Comment[sl]=Dostop do interneta
+Comment[sr]=Приступите Интернету
+Comment[sv]=Gå ut på Internet
+Comment[ta]=இணையத்தை அணுகுதல்
+Comment[te]=ఇంటర్నెట్‌ను ఆక్సెస్ చెయ్యండి
+Comment[th]=เข้าถึงอินเทอร์เน็ต
+Comment[tr]=İnternet'e erişin
+Comment[uk]=Доступ до Інтернету
+Comment[vi]=Truy cập Internet
+Comment[zh_CN]=访问互联网
+Comment[zh_HK]=連線到網際網路
+Comment[zh_TW]=連線到網際網路
+Exec=/usr/bin/google-chrome-stable %U
+StartupNotify=true
+Terminal=false
+Icon=google-chrome
+Type=Application
+Categories=Network;WebBrowser;
+MimeType=application/pdf;application/rdf+xml;application/rss+xml;application/xhtml+xml;application/xhtml_xml;application/xml;image/gif;image/jpeg;image/png;image/webp;text/html;text/xml;x-scheme-handler/http;x-scheme-handler/https;
+Actions=new-window;new-private-window;
+
+[Desktop Action new-window]
+Name=New Window
+Name[am]=አዲስ መስኮት
+Name[ar]=نافذة جديدة
+Name[bg]=Нов прозорец
+Name[bn]=নতুন উইন্ডো
+Name[ca]=Finestra nova
+Name[cs]=Nové okno
+Name[da]=Nyt vindue
+Name[de]=Neues Fenster
+Name[el]=Νέο Παράθυρο
+Name[en_GB]=New Window
+Name[es]=Nueva ventana
+Name[et]=Uus aken
+Name[fa]=پنجره جدید
+Name[fi]=Uusi ikkuna
+Name[fil]=New Window
+Name[fr]=Nouvelle fenêtre
+Name[gu]=નવી વિંડો
+Name[hi]=नई विंडो
+Name[hr]=Novi prozor
+Name[hu]=Új ablak
+Name[id]=Jendela Baru
+Name[it]=Nuova finestra
+Name[iw]=חלון חדש
+Name[ja]=新規ウインドウ
+Name[kn]=ಹೊಸ ವಿಂಡೊ
+Name[ko]=새 창
+Name[lt]=Naujas langas
+Name[lv]=Jauns logs
+Name[ml]=പുതിയ വിന്‍ഡോ
+Name[mr]=नवीन विंडो
+Name[nl]=Nieuw venster
+Name[no]=Nytt vindu
+Name[pl]=Nowe okno
+Name[pt]=Nova janela
+Name[pt_BR]=Nova janela
+Name[ro]=Fereastră nouă
+Name[ru]=Новое окно
+Name[sk]=Nové okno
+Name[sl]=Novo okno
+Name[sr]=Нови прозор
+Name[sv]=Nytt fönster
+Name[sw]=Dirisha Jipya
+Name[ta]=புதிய சாளரம்
+Name[te]=క్రొత్త విండో
+Name[th]=หน้าต่างใหม่
+Name[tr]=Yeni Pencere
+Name[uk]=Нове вікно
+Name[vi]=Cửa sổ Mới
+Name[zh_CN]=新建窗口
+Name[zh_TW]=開新視窗
+Exec=/usr/bin/google-chrome-stable
+
+[Desktop Action new-private-window]
+Name=New Incognito Window
+Name[ar]=نافذة جديدة للتصفح المتخفي
+Name[bg]=Нов прозорец „инкогнито“
+Name[bn]=নতুন ছদ্মবেশী উইন্ডো
+Name[ca]=Finestra d'incògnit nova
+Name[cs]=Nové anonymní okno
+Name[da]=Nyt inkognitovindue
+Name[de]=Neues Inkognito-Fenster
+Name[el]=Νέο παράθυρο για ανώνυμη περιήγηση
+Name[en_GB]=New Incognito window
+Name[es]=Nueva ventana de incógnito
+Name[et]=Uus inkognito aken
+Name[fa]=پنجره جدید حالت ناشناس
+Name[fi]=Uusi incognito-ikkuna
+Name[fil]=Bagong Incognito window
+Name[fr]=Nouvelle fenêtre de navigation privée
+Name[gu]=નવી છુપી વિંડો
+Name[hi]=नई गुप्त विंडो
+Name[hr]=Novi anoniman prozor
+Name[hu]=Új Inkognitóablak
+Name[id]=Jendela Penyamaran baru
+Name[it]=Nuova finestra di navigazione in incognito
+Name[iw]=חלון חדש לגלישה בסתר
+Name[ja]=新しいシークレット ウィンドウ
+Name[kn]=ಹೊಸ ಅಜ್ಞಾತ ವಿಂಡೋ
+Name[ko]=새 시크릿 창
+Name[lt]=Naujas inkognito langas
+Name[lv]=Jauns inkognito režīma logs
+Name[ml]=പുതിയ വേഷ പ്രച്ഛന്ന വിന്‍ഡോ
+Name[mr]=नवीन गुप्त विंडो
+Name[nl]=Nieuw incognitovenster
+Name[no]=Nytt inkognitovindu
+Name[pl]=Nowe okno incognito
+Name[pt]=Nova janela de navegação anónima
+Name[pt_BR]=Nova janela anônima
+Name[ro]=Fereastră nouă incognito
+Name[ru]=Новое окно в режиме инкогнито
+Name[sk]=Nové okno inkognito
+Name[sl]=Novo okno brez beleženja zgodovine
+Name[sr]=Нови прозор за прегледање без архивирања
+Name[sv]=Nytt inkognitofönster
+Name[ta]=புதிய மறைநிலைச் சாளரம்
+Name[te]=క్రొత్త అజ్ఞాత విండో
+Name[th]=หน้าต่างใหม่ที่ไม่ระบุตัวตน
+Name[tr]=Yeni Gizli pencere
+Name[uk]=Нове вікно в режимі анонімного перегляду
+Name[vi]=Cửa sổ ẩn danh mới
+Name[zh_CN]=新建隐身窗口
+Name[zh_TW]=新增無痕式視窗
+Exec=/usr/bin/google-chrome-stable --incognito
+
+*********************************************************************************************
+
+Contenido del archivo RPM-GPG-KEY-EPEL-8:
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBFz3zvsBEADJOIIWllGudxnpvJnkxQz2CtoWI7godVnoclrdl83kVjqSQp+2
+dgxuG5mUiADUfYHaRQzxKw8efuQnwxzU9kZ70ngCxtmbQWGmUmfSThiapOz00018
++eo5MFabd2vdiGo1y+51m2sRDpN8qdCaqXko65cyMuLXrojJHIuvRA/x7iqOrRfy
+a8x3OxC4PEgl5pgDnP8pVK0lLYncDEQCN76D9ubhZQWhISF/zJI+e806V71hzfyL
+/Mt3mQm/li+lRKU25Usk9dWaf4NH/wZHMIPAkVJ4uD4H/uS49wqWnyiTYGT7hUbi
+ecF7crhLCmlRzvJR8mkRP6/4T/F3tNDPWZeDNEDVFUkTFHNU6/h2+O398MNY/fOh
+yKaNK3nnE0g6QJ1dOH31lXHARlpFOtWt3VmZU0JnWLeYdvap4Eff9qTWZJhI7Cq0
+Wm8DgLUpXgNlkmquvE7P2W5EAr2E5AqKQoDbfw/GiWdRvHWKeNGMRLnGI3QuoX3U
+pAlXD7v13VdZxNydvpeypbf/AfRyrHRKhkUj3cU1pYkM3DNZE77C5JUe6/0nxbt4
+ETUZBTgLgYJGP8c7PbkVnO6I/KgL1jw+7MW6Az8Ox+RXZLyGMVmbW/TMc8haJfKL
+MoUo3TVk8nPiUhoOC0/kI7j9ilFrBxBU5dUtF4ITAWc8xnG6jJs/IsvRpQARAQAB
+tChGZWRvcmEgRVBFTCAoOCkgPGVwZWxAZmVkb3JhcHJvamVjdC5vcmc+iQI4BBMB
+AgAiBQJc9877AhsPBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAKCRAh6kWrL4bW
+oWagD/4xnLWws34GByVDQkjprk0fX7Iyhpm/U7BsIHKspHLL+Y46vAAGY/9vMvdE
+0fcr9Ek2Zp7zE1RWmSCzzzUgTG6BFoTG1H4Fho/7Z8BXK/jybowXSZfqXnTOfhSF
+alwDdwlSJvfYNV9MbyvbxN8qZRU1z7PEWZrIzFDDToFRk0R71zHpnPTNIJ5/YXTw
+NqU9OxII8hMQj4ufF11040AJQZ7br3rzerlyBOB+Jd1zSPVrAPpeMyJppWFHSDAI
+WK6x+am13VIInXtqB/Cz4GBHLFK5d2/IYspVw47Solj8jiFEtnAq6+1Aq5WH3iB4
+bE2e6z00DSF93frwOyWN7WmPIoc2QsNRJhgfJC+isGQAwwq8xAbHEBeuyMG8GZjz
+xohg0H4bOSEujVLTjH1xbAG4DnhWO/1VXLX+LXELycO8ZQTcjj/4AQKuo4wvMPrv
+9A169oETG+VwQlNd74VBPGCvhnzwGXNbTK/KH1+WRH0YSb+41flB3NKhMSU6dGI0
+SGtIxDSHhVVNmx2/6XiT9U/znrZsG5Kw8nIbbFz+9MGUUWgJMsd1Zl9R8gz7V9fp
+n7L7y5LhJ8HOCMsY/Z7/7HUs+t/A1MI4g7Q5g5UuSZdgi0zxukiWuCkLeAiAP4y7
+zKK4OjJ644NDcWCHa36znwVmkz3ixL8Q0auR15Oqq2BjR/fyog==
+=84m8
+-----END PGP PUBLIC KEY BLOCK-----
+
+*********************************************************************************************
