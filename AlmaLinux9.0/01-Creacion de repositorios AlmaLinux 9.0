@@ -1,0 +1,145 @@
+Creacion de repositorios AlmaLinux 9.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetivo: Clonar los repositorios de AlmaLinux 9.0 y tenerlos locales en la LAN
+
+1) Los repositorios que quedan configurados por defecto en une instalación básica de AlmaLinux  
+   9.0 son los siguientes:
+
+- # cat /etc/redhat-release
+  AlmaLinux release 9.0 (Emerald Puma)
+
+- # ls -l /etc/yum.repos.d/
+  total 44
+  -rw-r--r--. 1 root root 1019 Jul 26 18:50 almalinux-appstream.repo
+  -rw-r--r--. 1 root root  983 Jul 26 18:50 almalinux-baseos.repo
+  -rw-r--r--. 1 root root  947 Jul 26 18:50 almalinux-crb.repo
+  -rw-r--r--. 1 root root  983 Jul 26 18:50 almalinux-extras.repo
+  -rw-r--r--. 1 root root 1103 Jul 26 18:50 almalinux-highavailability.repo
+  -rw-r--r--. 1 root root  947 Jul 26 18:50 almalinux-nfv.repo
+  -rw-r--r--. 1 root root  959 Jul 26 18:50 almalinux-plus.repo
+  -rw-r--r--. 1 root root 1103 Jul 26 18:50 almalinux-resilientstorage.repo 
+  -rw-r--r--. 1 root root  935 Jul 26 18:50 almalinux-rt.repo
+  -rw-r--r--. 1 root root  995 Jul 26 18:50 almalinux-saphana.repo
+  -rw-r--r--. 1 root root  947 Jul 26 18:50 almalinux-sap.repo
+
+*********************************************************************************************
+
+2) Las URL en cada uno de los repositorios:
+
+- # cd /etc/yum.repos.d
+
+- # egrep '(^baseurl|# baseurl)' * | grep -v Media
+  almalinux-appstream.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/AppStream/$basearch/os/
+  almalinux-appstream.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/AppStream/debug/$basearch/
+  almalinux-appstream.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/AppStream/Source/
+  almalinux-baseos.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
+  almalinux-baseos.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/BaseOS/debug/$basearch/
+  almalinux-baseos.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/BaseOS/Source/
+  almalinux-crb.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/CRB/$basearch/os/
+  almalinux-crb.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/CRB/debug/$basearch/
+  almalinux-crb.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/CRB/Source/
+  almalinux-extras.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/extras/$basearch/os/
+  almalinux-extras.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/extras/debug/$basearch/
+  almalinux-extras.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/extras/Source/
+  almalinux-highavailability.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/HighAvailability/$basearch/os/
+  almalinux-highavailability.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/HighAvailability/debug/$basearch/
+  almalinux-highavailability.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/HighAvailability/Source/
+  almalinux-nfv.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/NFV/$basearch/os/
+  almalinux-nfv.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/NFV/debug/$basearch/
+  almalinux-nfv.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/NFV/Source/
+  almalinux-plus.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/plus/$basearch/os/
+  almalinux-plus.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/plus/debug/$basearch/
+  almalinux-plus.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/plus/Source/
+  almalinux-resilientstorage.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/ResilientStorage/$basearch/os/
+  almalinux-resilientstorage.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/ResilientStorage/debug/$basearch/
+  almalinux-resilientstorage.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/ResilientStorage/Source/
+  almalinux-rt.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/RT/$basearch/os/
+  almalinux-rt.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/RT/debug/$basearch/
+  almalinux-rt.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/RT/Source/
+  almalinux-saphana.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/SAPHANA/$basearch/os/
+  almalinux-saphana.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/SAPHANA/debug/$basearch/
+  almalinux-saphana.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/SAPHANA/Source/
+  almalinux-sap.repo:# baseurl=https://repo.almalinux.org/almalinux/$releasever/SAP/$basearch/os/
+  almalinux-sap.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/SAP/debug/$basearch/
+  almalinux-sap.repo:# baseurl=https://repo.almalinux.org/vault/$releasever/SAP/Source/
+
+*********************************************************************************************
+
+3) Si queremos bajar TODOS los repositorios de AlmaLinux 9.0 sin excepción (esto es lo que yo 
+   hice), hacemos asi:
+
+- # mkdir /var/www/html/almalinux9.0
+
+- # cd /var/www/html/almalinux9.0
+
+- # wget -r --no-check-certificate --ignore-length --no-host-directories --cut-dirs=1 -np \
+    --reject "index.html*" https://almalinux.mirror.letscloud.io/9.0/
+
+NOTA: utilicé letscloud.io ya que era el que performaba mejor.
+
+NOTA 2: El --cut-dirs=1 significa que no se hará el directorio 9.0
+
+Una vez finlaizado el download, tenemos que borrar las plataformas que no nos interesan:
+
+- # cd /var/www/html/almalinux9.0
+
+- # for dir in aarch64 ppc64le s390x; do find . -type d -name $dir -exec rm -rf {} \; ; done
+
+Finalmente descartamos las imágenes ISO y los archivos que no nos interesan:
+
+- # cd /var/www/html/almalinux9.0/isos/x86_64
+
+- # rm -f *latest*.iso *.iso.manifest *.torrent
+
+- # ls -l
+  total 10133508
+  -rw-r--r--. 1 root root  800063488 May 25 12:25 AlmaLinux-9.0-x86_64-boot.iso
+  -rw-r--r--. 1 root root 8049917952 May 25 12:31 AlmaLinux-9.0-x86_64-dvd.iso
+  -rw-r--r--. 1 root root 1526726656 May 25 12:29 AlmaLinux-9.0-x86_64-minimal.iso
+  -rw-r--r--. 1 root root       1356 May 25 20:08 CHECKSUM
+
+*********************************************************************************************
+
+4) Si queremos bajar solo algunos de los repositorios, entonces el mecanismo seria el   
+   siguiente:
+
+- # mkdir -p /var/www/html/almalinux9.0/BaseOS/{Packages,repodata}
+
+- # cd /var/www/html/almalinux9.0/BaseOS/Packages/
+
+- # wget -r --no-check-certificate --level=0 --ignore-length --no-host-directories --cut-dirs=5 \
+    -erobots=off -np --reject "index.html*" https://almalinux.mirror.letscloud.io/9.0/BaseOS/x86_64/os/Packages/
+
+- # cd /var/www/html/almalinux9.0/BaseOS/repodata/
+
+- # wget -r --no-check-certificate --level=0 --ignore-length --no-host-directories --cut-dirs=5 \
+    -erobots=off -np --reject "index.html*" https://almalinux.mirror.letscloud.io/9.0/BaseOS/x86_64/os/repodata/
+
+NOTA: El directorio BaseOS contiene os y kickstart que es MUY importante para poder hacer 
+      instalaciones desatendidas.
+
+*********************************************************************************************
+
+5) Para crear el repositorio EPEL hacemos:
+
+- # mkdir -p /var/www/html/almalinux9.0/epel/{Packages,repodata}
+
+- # cd /var/www/html/almalinux9.0/epel/
+
+- # wget -r --ignore-length --no-host-directories --cut-dirs=5 -np \
+    --reject "index.html*" https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
+
+Y borramos los directorios que no nos interesan:
+
+- # rm -rf debug/ drpms/
+
+*********************************************************************************************
+
+6) Obetenemos la clave pública GPG del repositorio EPEL:
+
+- # cd /var/www/html/almalinux9.0/epel/
+
+- # wget https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
+
+*********************************************************************************************
