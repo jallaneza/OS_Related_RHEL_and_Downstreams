@@ -1,0 +1,97 @@
+Creacion de repositorios CentOS 8.5
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Objetivo: Clonar los repositorios de CentOS 8.5 y tenerlos locales en la LAN
+
+1) Los repositorios que quedan configurados por defecto en une instalación básica de CentOS 
+   8.5 son los siguientes:
+
+- # cat /etc/redhat-release
+  CentOS Linux release 8.5.2111
+
+- # ls -l /etc/yum.repos.d/
+  total 48
+  -rw-r--r--. 1 root root  719 Sep 14  2021 CentOS-Linux-AppStream.repo
+  -rw-r--r--. 1 root root  704 Sep 14  2021 CentOS-Linux-BaseOS.repo
+  -rw-r--r--. 1 root root 1130 Sep 14  2021 CentOS-Linux-ContinuousRelease.repo
+  -rw-r--r--. 1 root root  318 Sep 14  2021 CentOS-Linux-Debuginfo.repo
+  -rw-r--r--. 1 root root  732 Sep 14  2021 CentOS-Linux-Devel.repo
+  -rw-r--r--. 1 root root  704 Sep 14  2021 CentOS-Linux-Extras.repo
+  -rw-r--r--. 1 root root  719 Sep 14  2021 CentOS-Linux-FastTrack.repo
+  -rw-r--r--. 1 root root  740 Sep 14  2021 CentOS-Linux-HighAvailability.repo
+  -rw-r--r--. 1 root root  693 Sep 14  2021 CentOS-Linux-Media.repo
+  -rw-r--r--. 1 root root  706 Sep 14  2021 CentOS-Linux-Plus.repo
+  -rw-r--r--. 1 root root  724 Sep 14  2021 CentOS-Linux-PowerTools.repo
+  -rw-r--r--. 1 root root 1124 Sep 14  2021 CentOS-Linux-Sources.repo
+
+*********************************************************************************************
+
+2) Las URL en cada uno de los repositorios:
+
+- # cd /etc/yum.repos.d
+
+- # egrep '(^baseurl|#baseurl)' * | grep -v Media
+  CentOS-Linux-AppStream.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/AppStream/$basearch/os/
+  CentOS-Linux-BaseOS.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/BaseOS/$basearch/os/
+  CentOS-Linux-ContinuousRelease.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/cr/$basearch/os/
+  CentOS-Linux-Debuginfo.repo:baseurl=http://debuginfo.centos.org/$releasever/$basearch/
+  CentOS-Linux-Devel.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/Devel/$basearch/os/
+  CentOS-Linux-Extras.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/extras/$basearch/os/
+  CentOS-Linux-FastTrack.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/fasttrack/$basearch/os/
+  CentOS-Linux-HighAvailability.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/HighAvailability/$basearch/os/
+  CentOS-Linux-Plus.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/centosplus/$basearch/os/
+  CentOS-Linux-PowerTools.repo:#baseurl=http://mirror.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/
+  CentOS-Linux-Sources.repo:baseurl=http://vault.centos.org/$contentdir/$releasever/BaseOS/Source/
+  CentOS-Linux-Sources.repo:baseurl=http://vault.centos.org/$contentdir/$releasever/AppStream/Source/
+  CentOS-Linux-Sources.repo:baseurl=http://vault.centos.org/$contentdir/$releasever/PowerTools/Source/
+  CentOS-Linux-Sources.repo:baseurl=http://vault.centos.org/$contentdir/$releasever/extras/Source/
+  CentOS-Linux-Sources.repo:baseurl=http://vault.centos.org/$contentdir/$releasever/centosplus/Source/
+
+*********************************************************************************************
+
+3) Si queremos bajar TODOS los repositorios de CentOS 8.5 sin excepción (esto es lo que yo 
+   hice), hacemos asi:
+
+- # mkdir /var/www/html/centos8.5
+
+- # cd /var/www/html/centos8.5
+
+- # wget -r --ignore-length --no-host-directories --cut-dirs=2 -np --reject "index.html*" http://centos.zero.com.ar/centos/8.5.2111/
+
+NOTA: utilicé zero.com.ar ya que es local aqui a la Argentina y performa muy bien.
+
+NOTA 2: El --cut-dirs=2 significa que no se harán los directorios centos/8.5.2111  
+
+*********************************************************************************************
+
+4) Si queremos bajar solo algunos de los repositorios, entonces el mecanismo seria el   
+   siguiente:
+
+- # mkdir -p /var/www/html/centos8.5/BaseOS/{Packages,repodata}
+
+- # cd /var/www/html/centos8.5/BaseOS/Packages/
+
+- # wget -r --level=0 --ignore-length --no-host-directories --cut-dirs=5 -erobots=off -np --reject "index.html*" http://centos.zero.com.ar/centos/8.5.2111/BaseOS/x86_64/os/Packages/
+
+- # cd /var/www/html/centos8.5/BaseOS/repodata/
+
+- # wget -r --level=0 --ignore-length --no-host-directories --cut-dirs=5 -erobots=off -np --reject "index.html*" http://centos.zero.com.ar/centos/8.5.2111/BaseOS/x86_64/os/repodata/
+
+NOTA: El directorio BaseOS contiene os y kickstart que es MUY importante para poder hacer 
+      instalaciones desatendidas.
+
+*********************************************************************************************
+
+5) Para crear el repositorio EPEL hacemos:
+
+- # mkdir -p /var/www/html/centos8.5/epel/{Packages,repodata}
+
+- # cd /var/www/html/centos8.5/epel/Packages
+
+- # wget -r --level=0 --ignore-length --no-host-directories --cut-dirs=6 -erobots=off -np --reject "index.html*" https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages
+
+- # cd /var/www/html/centos8.5/epel/repodata
+
+- # wget -r --level=0 --ignore-length --no-host-directories --cut-dirs=6 -erobots=off -np --reject "index.html*" https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/repodata/
+
+*********************************************************************************************
